@@ -183,12 +183,12 @@ amqp.connect("amqp://rabbitmq:5672", (error0, connection) => {
 
 
         channel.consume(queue, function (msg) {
-            // console.log('[x] Worker 01');
+            console.log('[x] Worker 01');
 
             // converting message to string and then to json object
             json_msg = JSON.parse(msg.content.toString())
             // console.log("[x] Received %s", json_msg.src);
-            console.log("[x] Worker 01 - Received %s", json_msg.filename);
+            console.log("[x] Received %s", json_msg.filename);
 
             // when we will receive a message we will create files
             createFiles(json_msg, channel, msg);

@@ -109,8 +109,9 @@ app.get("/results/:filename", (req, res) => {
     });
 })
 
-app.listen(3000, () => {
-    console.log(`Server app listening at port 3000!`)
+let PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server app listening at port ${PORT}!`)
 })
 
 // for the rabbitmq
