@@ -3,33 +3,24 @@ services:
   rabbitmq:
     image: 'rabbitmq:3.8.14-management-alpine'
     restart: always
-    ports: 
-      - "15672:15672"
-   
-     
 
   redis-server:
     image: 'redis:latest'
     restart: always
 
-
-
   server:
     build: ./server
     restart: always
     ports: 
-      - "8080:8080"
-      - "9090:9090"
+      - "3000:3000"
     
-
   worker:
     build: ./worker
     restart: always
     pids_limit: 50
-    #cpus: 0.5
     scale : 1
     init: true
-    # cpus: "1"
+    cpus: 1
     mem_limit: 150M  
 
   # worker02:

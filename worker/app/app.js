@@ -47,7 +47,9 @@ function runCode(json_msg, channel, msg) {
 
                     const {exec} = require('child_process');
                     // executing the command
+                    let startedAt = new Date();
                     exec(command, (err3, stdout, stderr) => {
+                        let completedAt = new Date();
                         if (err3) {
                             console.log("in err3")
                             console.log(err3);
@@ -58,28 +60,27 @@ function runCode(json_msg, channel, msg) {
                             deletingTempFiles()
                         } else {
 
-                            console.log(`-------------------------${json_msg.lang}-------------------------------`)
-
-                            // for showing file size
-                            let stats = fs.statSync("./temp/output.txt")
-                            let fileSizeInBytes = stats.size;
-                            // Convert the file size to megabytes (optional)
-                            let fileSizeInMegabytes = fileSizeInBytes / (1024*1024);
-                            console.log(`-------------------filesize: ${fileSizeInBytes} bytes------------------`)
-                            console.log(`-------------------filesize: ${fileSizeInMegabytes} mb-----------------`)
-
-                            // console.log(stdout);
-                            // console.log(stderr);
                             fs.readFile("./temp/output.txt", "utf8", function (err4, contents) {
 
                                 if (err4)
                                     console.log(err4);
                                 else {
+                                    let stats = fs.statSync("./temp/" + json_msg.filename + "." + extensions[json_msg.lang])
+                                    let fileSizeInBytes = stats.size;
+                                    // Convert the file size to megabytes (optional)
+                                    let fileSizeInMegabytes = fileSizeInBytes / (1024*1024);
                                     
                                     let result = {
                                         'output': contents,
-                                        'status':stdout,
-                                        'stderr':stderr,
+                                        'status': stdout,
+                                        'stderr': stderr,
+                                        'language': json_msg.lang,
+                                        'fileSizeInBytes': fileSizeInBytes,
+                                        'fileSizeInMegabytes': fileSizeInMegabytes,
+                                        'startedAt': startedAt.toUTCString(),
+                                        'completedAt': completedAt.toUTCString(),
+                                        'timeTakenInMillisecond': completedAt - startedAt,
+                                        'timeTakenInSeconds': (completedAt - startedAt)/1000,
                                         'submission_id': json_msg.filename
                                     }
 
@@ -182,12 +183,12 @@ amqp.connect("amqp://rabbitmq:5672", (error0, connection) => {
 
 
         channel.consume(queue, function (msg) {
-            console.log('[x] Worker 01');
+            // console.log('[x] Worker 01');
 
             // converting message to string and then to json object
             json_msg = JSON.parse(msg.content.toString())
             // console.log("[x] Received %s", json_msg.src);
-            console.log("[x] Received %s", json_msg.filename);
+            console.log("[x] Worker 01 - Received %s", json_msg.filename);
 
             // when we will receive a message we will create files
             createFiles(json_msg, channel, msg);

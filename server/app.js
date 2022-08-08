@@ -1,36 +1,16 @@
 const express = require('express');
+const parser = require('body-parser')
 const amqp = require('amqplib/callback_api');
 // const amqp = require('amqp-connection-manager');
 const redis = require('redis');
 const EventEmitter = require('events');
 const eventEmitter = new EventEmitter();
-const compression = require('compression');
-
-
-// for https 
-const https = require('https')
-const path = require('path');
-const fs = require('fs');
-
-// const bodyParser = require('body-parser')
-const app = express()
-
-const port1 = 9090   //for http
-const port2 = 8080   //for https
-
 const cors = require('cors');
-const {
-    fdatasync
-} = require('fs');
-app.use(cors())
 
-// middleware
-app.use(express.json());
-//for gzip compression
-app.use(compression({
-    level :7,
-    threshold:30*1000 
-}))
+const app = express()
+app.use(cors())
+app.use(parser.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }))
+app.use(parser.json({limit: "50mb"}))
 
 // for redis
 const client = redis.createClient({
@@ -47,11 +27,7 @@ function random(size) {
 }
 
 app.get('/' , (req,res)=>{
-    res.status(200).send("Hello from Titan-Engine");
-})
-
-app.get('/redirect' , (req,res)=>{
-    res.redirect("https://titan-engine.herokuapp.com/");
+    res.status(200).send("Hello, The Server is Working!");
 })
 
 app.get('/stats', (req, res) => {
@@ -65,38 +41,6 @@ app.get('/stats', (req, res) => {
         os.cpuFree(function (v) {
             cpu_free = v * 100;
             data = {
-
-                "10": `  ............................................................................  `,
-                "11": `   #████████████████████████████████████████████████████████████████████████#   `,
-                "12": `    #██████████████████████████████████████████████████████████████████████#    `,
-                "13": `      .................................  .................................      `,
-                "14": `        #█████████████████████████████.  .█████████████████████████████#        `,
-                "15": `           #██████████████████████████.  .██████████████████████████#           `,
-                "16": `             ,,,,,,,,,,,,,,,,,,,██████.  .██████,,,,,,,,,,,,,,,,,,,             `,
-                "17": `                               .██████.  .██████.                               `,
-                "18": `                               .██████.  .██████.                               `,
-                "19": `                               .██████.  .██████.                               `,
-                "20": `                               .██████.  .██████.                               `,
-                "21": `                               .██████.  .██████.                               `,
-                "22": `                               .██████.  .██████.                               `,
-                "23": `                               .██████.  .██████.                               `,
-                "24": `                               .██████.  .██████.                               `,
-                "25": `                               .██████.  .██████.                               `,
-                "26": `                               .██████.  .██████.                               `,
-                "27": `                               .██████.  .██████.                               `,
-                "28": `                               .██████.  .██████.                               `,
-                "29": `                                 #████.  .████#                                 `,
-                "30": `                                   #██.  .██#                                   `,
-                "31": `                                     #.  .#                                     `,
-                "32": `                                                                                `,
-                "33": `                                                                                `,
-                "34": `                    ████████╗██╗████████╗ █████╗ ███╗   ██╗                     `,
-                "35": `                    ╚══██╔══╝██║╚══██╔══╝██╔══██╗████╗  ██║                     `,
-                "36": `                       ██║   ██║   ██║   ███████║██╔██╗ ██║                     `,
-                "37": `                       ██║   ██║   ██║   ██╔══██║██║╚██╗██║                     `,
-                "38": `                       ██║   ██║   ██║   ██║  ██║██║ ╚████║                     `,
-                "39": `                       ╚═╝   ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═══╝                     `,
-                "40": `                           Titan Code Execution Engine                          `,
                 "OS platform": os.platform(),
                 "CPU usage (%)": cpu_usage,
                 "CPU free  (%)": cpu_free,
@@ -115,17 +59,11 @@ app.get('/stats', (req, res) => {
             res.status(200).send(JSON.stringify(data, undefined, ' '));
         })
     })
-
-
-    // res.send('Hello World from the server.');
     console.log("A get request has been made");
 })
 
 app.post('/submit', (req, res) => {
-    // res.send('Yea i got ur message');
-    console.log("A post request has been made");
-    // let data_src = req.body.src;
-    // let data_src = req.body ;
+    console.log("A question has been submitted!");
     data_src = {
         "src": req.body.src,
         "stdin": req.body.stdin,
@@ -133,7 +71,6 @@ app.post('/submit', (req, res) => {
         "timeout": req.body.timeout,
         "filename": "Test" + random(10)
     }
-    // console.log(data_src);
 
     if (req.body.src && req.body.lang && parseInt(req.body.timeout) <= 5) {
 
@@ -152,10 +89,6 @@ app.post('/submit', (req, res) => {
             'status': "Invalid Request",
         }
         client.setex(data_src.filename.toString(), 300, JSON.stringify(result));
-
-
-
-        // res.status(202).send('http://localhost:8080/results/' + data_src.filename);
         res.status(202).send(req.protocol + '://' + req.get('host') + "/results/" + data_src.filename);
 
     }
@@ -176,19 +109,8 @@ app.get("/results/:filename", (req, res) => {
     });
 })
 
-app.listen(port1, () => {
-    console.log(`Server app listening at http://localhost:${port1}`)//port : 9090
-})
-
-
-const sslServer = https.createServer({
-    key :fs.readFileSync(path.join(__dirname , 'cert' , 'key.pem')),
-    cert:fs.readFileSync(path.join(__dirname , 'cert' , 'cert.pem')),  
-} , app)
-
-
-sslServer.listen(port2, () => {
-    console.log(`Server app listening at https://localhost:${port2}`)//port : 8080
+app.listen(3000, () => {
+    console.log(`Server app listening at port 3000!`)
 })
 
 // for the rabbitmq
@@ -205,15 +127,14 @@ amqp.connect('amqp://rabbitmq:5672', function (error0, connection) {
 
         }
         var queue = 'task_queue';
-        // var msg = 'The message number is ' +num ;
 
         channel.assertQueue(queue, {
             durable: false
         });
-        console.log('------------------------------------------------Connected server----------------------------------------------------')
+        console.log("Connected to RabbitMQ Server!")
         eventEmitter.on("message_received", (data) => {
             channel.sendToQueue(queue, Buffer.from(JSON.stringify(data)));
-            console.log("[x] Sent: %s file(%s) has been sent", data.lang, data.filename);
+            console.log(`[x] Sent: %s file(%s) has been sent`, data.lang, data.filename);
 
         })
 
